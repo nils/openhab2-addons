@@ -8,9 +8,11 @@
  */
 package org.openhab.binding.pioneeravr.protocol;
 
-import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.pioneeravr.protocol.event.AvrDisconnectionListener;
-import org.openhab.binding.pioneeravr.protocol.event.AvrUpdateListener;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+
+import org.openhab.binding.pioneeravr.protocol.event.AvrConnectionListener;
+import org.openhab.binding.pioneeravr.protocol.event.AvrNotificationListener;
 
 /**
  * Represent a connection to a remote Pioneer AVR.
@@ -20,110 +22,95 @@ import org.openhab.binding.pioneeravr.protocol.event.AvrUpdateListener;
 public interface AvrConnection {
 
     /**
-     * Add an update listener. It is notified when an update is received from the AVR.
+     * Add a notification listener. It is notified when a notification is received from the AVR.
      *
      * @param listener
      */
-    public void addUpdateListener(AvrUpdateListener listener);
+    void addNotificationListener(AvrNotificationListener listener);
 
     /**
      * Add a disconnection listener. It is notified when the AVR is disconnected.
      *
      * @param listener
      */
-    public void addDisconnectionListener(AvrDisconnectionListener listener);
+    void addConnectionListener(AvrConnectionListener listener);
 
     /**
      * Connect to the receiver. Return true if the connection has succeeded or if already connected.
      *
      **/
-    public boolean connect();
+    boolean connect();
 
     /**
      * Return true if this manager is connected to the AVR.
      *
      * @return
      */
-    public boolean isConnected();
+    boolean isConnected();
 
     /**
      * Closes the connection.
      **/
-    public void close();
+    void close();
 
     /**
-     * Send a power state query to the AVR
+     * Sends the command to the receiver.
      *
-     * @param zone
-     * @return
-     */
-    public boolean sendPowerQuery(int zone);
-
-    /**
-     * Send a volume level query to the AVR
+     * If a disconnection is detected during the send, the listeners are notified about the disconnection and null is
+     * returned.
      *
-     * @param zone
-     * @return
-     */
-    public boolean sendVolumeQuery(int zone);
+     * @param command the command to send.
+     * @return the response to the command, or null if the request has not been sent.
+     * @throws TimeoutException if no response to the command is received after the time out delay.
+     **/
+    AvrResponse sendCommand(AvrCommand command) throws TimeoutException;
 
     /**
-     * Send a mute state query to the AVR
+     * Sends the commands to the receiver in burst. Does not wait for the last command response before sending the next
+     * one. No response is expected from this burst.
      *
-     * @param zone
-     * @return
-     */
-    public boolean sendMuteQuery(int zone);
-
-    /**
-     * Send a source input state query to the AVR
+     * During the burst (until the last command is sent), all responses and notifications from the AVR will be
+     * discarded. It means that if the AVR sends back responses for this commands and they are received after the last
+     * command is sent, the responses will be discarded or considered as notifications (if the response type is a
+     * notification).
      *
-     * @param zone
-     * @return
-     */
-    public boolean sendSourceInputQuery(int zone);
+     * @param command the command to send.
+     * @param the number of times the command will be sent.
+     **/
+    void sendBurstCommands(AvrCommand command, int count);
 
     /**
-     * Send a power command ot the AVR based on the openHAB command
+     * Sends the commands to the receiver in burst. Does not wait for the last command response before sending the next
+     * one. No response is expected from this burst.
      *
-     * @param command
-     * @param zone
-     * @return
-     */
-    public boolean sendPowerCommand(Command command, int zone) throws CommandTypeNotSupportedException;
-
-    /**
-     * Send a volume command to the AVR based on the openHAB command
+     * During the burst (until the last command is sent), all responses and notifications from the AVR will be
+     * discarded. It means that if the AVR sends back responses for this commands and they are received after the last
+     * command is sent, the responses will be discarded or considered as notifications (if the response type is a
+     * notification).
      *
-     * @param command
-     * @param zone
-     * @return
-     */
-    public boolean sendVolumeCommand(Command command, int zone) throws CommandTypeNotSupportedException;
+     * @param command the commands to send.
+     **/
+    void sendBurstCommands(List<AvrCommand> commands);
 
     /**
-     * Send a source input selection command to the AVR based on the openHAB command
-     *
-     * @param command
-     * @param zone
-     * @return
-     */
-    public boolean sendInputSourceCommand(Command command, int zone) throws CommandTypeNotSupportedException;
-
-    /**
-     * Send a mute command to the AVR based on the openHAB command
-     *
-     * @param command
-     * @param zone
-     * @return
-     */
-    public boolean sendMuteCommand(Command command, int zone) throws CommandTypeNotSupportedException;
-
-    /**
-     * Return the connection name
+     * Return the connection name.
      *
      * @return
      */
-    public String getConnectionName();
+    String getConnectionName();
+
+    /**
+     * Define the delay between two messages in burst send.
+     *
+     * @param burstMessageDelay
+     */
+    void setBurstMessageDelay(int burstMessageDelay);
+
+    /**
+     * Enable/Disable the burst mode. If disabled, the burst commands are sent in "slow" mode.
+     *
+     * @param burstModeEnabled
+     */
+    void setBurstModeEnabled(boolean burstModeEnabled);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2017 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,15 +8,21 @@
  */
 package org.openhab.binding.pioneeravr.protocol;
 
+import org.openhab.binding.pioneeravr.internal.protocol.Response.ResponseType;
+
 /**
  * The base interface for an AVR command.
  *
- * @author Antoine Besnard - Initial contribution
+ * @author Antoine Besnard
+ *
  */
 public interface AvrCommand {
 
     /**
-     * Represent a CommandType of command requests
+     * Represent a CommandType of command requests.
+     *
+     * @author Antoine Besnard
+     *
      */
     public interface CommandType {
 
@@ -30,11 +36,18 @@ public interface AvrCommand {
         public String getCommand(int zone);
 
         /**
-         * Return the name of the command type
+         * Return the name of the command type.
          *
          * @return
          */
         public String name();
+
+        /**
+         * Return the expected response type to this request. May be null if no response is expected.
+         *
+         * @return
+         */
+        public ResponseType getExpectedResponse();
     }
 
     /**
@@ -57,5 +70,12 @@ public interface AvrCommand {
      * @return
      */
     public CommandType getCommandType();
+
+    /**
+     * Return true if a response is expected for this command, else false.
+     *
+     * @return
+     */
+    public boolean isResponseExpected();
 
 }

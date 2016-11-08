@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config-description:config-descriptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:config-description="http://eclipse.org/smarthome/schemas/config-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/config-description/v1.0.0
+        http://eclipse.org/smarthome/schemas/config-description-1.0.0.xsd">
+
+	<!-- Configuration of Generic AVRs -->
+	<config-description uri="thing-type:pioneeravr:genericConfig">
+		<parameter-group name="ipConnection">
+			<label>IP configuration</label>
+			<description>IP configuration</description>
+		</parameter-group>
+		<parameter-group name="serialConnection">
+			<label>Serial configuration</label>
+			<advanced>true</advanced>
+			<description>Configuration to use Serial connection instead of IP.</description>
+		</parameter-group>
+		<parameter-group name="configuration">
+			<label>General configuration</label>
+			<description>General configuration.</description>
+		</parameter-group>
+
+		<parameter name="ipAddress" type="text" required="false" groupName="ipConnection">
+			<context>network-address</context>
+			<label>Address</label>
+			<description>The address of the Pioneer AVR to control.</description>
+		</parameter>
+		<parameter name="tcpPort" type="integer" max="65535" min="1" required="false" groupName="ipConnection">
+			<default>23</default>
+			<label>TCP Port</label>
+			<description>The TCP port number used to connect to the AVR.</description>
+		</parameter>
+
+		<parameter name="useSerial" type="boolean" required="false" groupName="serialConnection">
+			<default>false</default>
+			<label>Use serial</label>
+			<description>If the serial connection has to be used instead of IP. If selected, the IP connection parameters are not used.</description>
+		</parameter>
+		<parameter name="serialPort" type="text" required="false" groupName="serialConnection">
+			<label>Port name</label>
+			<description>The Serial port name to use to connect to the AVR.</description>
+		</parameter>
+
+		<parameter name="nbZones" type="decimal" required="true" groupName="configuration" min="1" max="4" step="1">
+			<default>1</default>
+			<label>Define the number of zones supported by the AVR</label>
+			<description>Below parameters for zones that are not supported will be ignored.</description>
+		</parameter>
+
+		<parameter name="setVolumeCommandEnabled" type="boolean" required="true" groupName="configuration">
+			<default>true</default>
+			<label>Use setVolume Command</label>
+			<description>Tell if the setVolume command should be used to set the volume on the AVR. All AVRs does not support this command. If set and nothing happen when the volume is changed, disable it. When disable, the volume is set in Burst Mode.</description>
+		</parameter>
+		
+		<parameter name="burstMessageDelay" type="decimal" min="0" step="1" required="true" groupName="configuration">
+            <default>10</default>
+            <unitLabel>ms</unitLabel>
+            <label>Busrt message delay</label>
+            <description>The delay (in ms) between two messages send to the AVR in burst mode. If the delay is too short, some messages may be missed by the AVR and the volume level will not be accurate. If too high, the volume will be longer to adjust to the requested value.</description>
+        </parameter>
+        
+        <parameter name="setBurstModeEnabled" type="boolean" required="true" groupName="configuration">
+            <default>true</default>
+            <label>Use burst mode</label>
+            <description>Disable/Enable the burst mode. Should be disabled only if no valid value of Burst message delay can be found. If Disabled, the volume change may be slow. Should only be used in last resort.</description>
+        </parameter>
+		
+		<parameter name="volumeMinDbZone1" type="decimal" required="true" groupName="configuration">
+			<default>-80</default>
+			<unitLabel>dB</unitLabel>
+			<label>Min volume for Zone 1</label>
+			<description>Minimum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeMaxDbZone1" type="decimal" required="true" groupName="configuration">
+			<default>12</default>
+			<unitLabel>dB</unitLabel>
+			<label>Max volume for Zone 1</label>
+			<description>Maximum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeStepDbZone1" type="decimal" required="true" groupName="configuration" min="0.1" step="0.1">
+			<default>0.5</default>
+			<unitLabel>dB</unitLabel>
+			<label>Volume step for Zone 1</label>
+			<description>Volume step (in dB) when the volume Up/Down touch of the remote is pressed.</description>
+		</parameter>
+
+		<parameter name="volumeMinDbZone2" type="decimal" required="true" groupName="configuration">
+			<default>-80</default>
+			<unitLabel>dB</unitLabel>
+			<label>Min volume for zone 2</label>
+			<description>Minimum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeMaxDbZone2" type="decimal" required="true" groupName="configuration">
+			<default>0</default>
+			<unitLabel>dB</unitLabel>
+			<label>Max volume for zone 2</label>
+			<description>Maximum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeStepDbZone2" type="decimal" required="true" groupName="configuration" min="0.1" step="0.1">
+			<default>1</default>
+			<unitLabel>dB</unitLabel>
+			<label>Volume step for zone 2</label>
+			<description>Volume step (in dB) when the volume Up/Down touch of the remote is pressed.</description>
+		</parameter>
+
+		<parameter name="volumeMinDbZone3" type="decimal" required="true" groupName="configuration">
+			<default>-80</default>
+			<unitLabel>dB</unitLabel>
+			<label>Min volume for zone 3</label>
+			<description>Minimum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeMaxDbZone3" type="decimal" required="true" groupName="configuration">
+			<default>0</default>
+			<unitLabel>dB</unitLabel>
+			<label>Max volume for zone 3</label>
+			<description>Maximum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeStepDbZone3" type="decimal" required="true" groupName="configuration" min="0.1" step="0.1">
+			<default>1</default>
+			<unitLabel>dB</unitLabel>
+			<label>Volume step for zone 3</label>
+			<description>Volume step (in dB) when the volume Up/Down touch of the remote is pressed.</description>
+		</parameter>
+
+
+		<parameter name="volumeMinDbZone4" type="decimal" required="true" groupName="configuration">
+			<default>-80</default>
+			<unitLabel>dB</unitLabel>
+			<label>Min volume for zone HD</label>
+			<description>Minimum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeMaxDbZone4" type="decimal" required="true" groupName="configuration">
+			<default>0</default>
+			<unitLabel>dB</unitLabel>
+			<label>Max volume for zone HD</label>
+			<description>Maximum volume (in dB).</description>
+		</parameter>
+
+		<parameter name="volumeStepDbZone4" type="decimal" required="true" groupName="configuration" min="0.1" step="0.1">
+			<default>1</default>
+			<unitLabel>dB</unitLabel>
+			<label>Volume step for zone HD</label>
+			<description>Volume step (in dB) when the volume Up/Down touch of the remote is pressed.</description>
+		</parameter>
+	</config-description>
+
+	<!-- Configuration of AVRs that are supported -->
+	<config-description uri="thing-type:pioneeravr:supportedConfig">
+		<parameter-group name="ipConnection">
+			<label>IP configuration</label>
+			<description>IP configuration</description>
+		</parameter-group>
+		<parameter-group name="serialConnection">
+			<label>Serial configuration</label>
+			<advanced>true</advanced>
+			<description>Configuration to use Serial connection instead of IP.</description>
+		</parameter-group>
+
+		<parameter name="ipAddress" type="text" required="false" groupName="ipConnection">
+			<context>network-address</context>
+			<label>Address</label>
+			<description>The address of the Pioneer AVR to control.</description>
+		</parameter>
+		<parameter name="tcpPort" type="integer" max="65535" min="1" required="false" groupName="ipConnection">
+			<default>23</default>
+			<label>TCP Port</label>
+			<description>The TCP port number used to connect to the AVR.</description>
+		</parameter>
+
+		<parameter name="useSerial" type="boolean" required="false" groupName="serialConnection">
+			<default>false</default>
+			<label>Use serial</label>
+			<description>If the serial connection has to be used instead of IP. If selected, the IP connection parameters are not used.</description>
+		</parameter>
+		<parameter name="serialPort" type="text" required="false" groupName="serialConnection">
+			<label>Port name</label>
+			<description>The Serial port name to use to connect to the AVR.</description>
+		</parameter>
+	</config-description>
+</config-description:config-descriptions>

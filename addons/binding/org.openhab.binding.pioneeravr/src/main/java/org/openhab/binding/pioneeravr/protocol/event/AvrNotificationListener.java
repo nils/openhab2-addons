@@ -18,11 +18,11 @@ import java.util.EventListener;
  * @author Antoine Besnard - Initial contribution
  * @author Rainer Ostendorf - Initial contribution
  */
-public interface AvrUpdateListener extends EventListener {
+public interface AvrNotificationListener extends EventListener {
 
     /**
      * Procedure for receive status update from Pioneer receiver.
      */
-    public void statusUpdateReceived(AvrStatusUpdateEvent event);
+    public void statusUpdateReceived(AvrNotificationEvent event);
 
 }

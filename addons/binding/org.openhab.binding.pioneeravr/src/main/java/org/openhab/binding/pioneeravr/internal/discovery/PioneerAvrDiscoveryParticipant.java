@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2017 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,9 @@
  */
 package org.openhab.binding.pioneeravr.internal.discovery;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,36 +19,34 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.smarthome.config.discovery.DiscoveryResult;
 import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
-import org.eclipse.smarthome.config.discovery.upnp.UpnpDiscoveryParticipant;
+import org.eclipse.smarthome.config.discovery.UpnpDiscoveryParticipant;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.jupnp.model.meta.RemoteDevice;
 import org.openhab.binding.pioneeravr.PioneerAvrBindingConstants;
+import org.openhab.binding.pioneeravr.internal.models.ConfigurableModel;
+import org.openhab.binding.pioneeravr.internal.protocol.ip.IpAvrConnection;
+import org.openhab.binding.pioneeravr.internal.thingtype.ThingTypeManager;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 
 /**
  * An UpnpDiscoveryParticipant which allows to discover Pioneer AVRs.
  *
- * @author Antoine Besnard - Initial contribution
+ * @author Antoine Besnard
+ *
  */
-@Component(immediate = true)
 public class PioneerAvrDiscoveryParticipant implements UpnpDiscoveryParticipant {
 
-    private final Logger logger = LoggerFactory.getLogger(PioneerAvrDiscoveryParticipant.class);
+    private Logger logger = LoggerFactory.getLogger(PioneerAvrDiscoveryParticipant.class);
 
+    private ThingTypeManager modelManager;
     private boolean isAutoDiscoveryEnabled;
     private Set<ThingTypeUID> supportedThingTypes;
 
     public PioneerAvrDiscoveryParticipant() {
         this.isAutoDiscoveryEnabled = true;
-        this.supportedThingTypes = PioneerAvrBindingConstants.SUPPORTED_THING_TYPES_UIDS;
     }
 
     /**
@@ -53,7 +54,6 @@ public class PioneerAvrDiscoveryParticipant implements UpnpDiscoveryParticipant 
      *
      * @param componentContext
      */
-    @Activate
     protected void activate(ComponentContext componentContext) {
         if (componentContext.getProperties() != null) {
             String autoDiscoveryPropertyValue = (String) componentContext.getProperties().get("enableAutoDiscovery");
@@ -61,8 +61,8 @@ public class PioneerAvrDiscoveryParticipant implements UpnpDiscoveryParticipant 
                 isAutoDiscoveryEnabled = Boolean.valueOf(autoDiscoveryPropertyValue);
             }
         }
-        supportedThingTypes = isAutoDiscoveryEnabled ? PioneerAvrBindingConstants.SUPPORTED_THING_TYPES_UIDS
-                : new HashSet<>();
+        supportedThingTypes = isAutoDiscoveryEnabled ? modelManager.getRegisteredThingTypesUIDs()
+                : new HashSet<ThingTypeUID>();
     }
 
     @Override
@@ -78,9 +78,11 @@ public class PioneerAvrDiscoveryParticipant implements UpnpDiscoveryParticipant 
             String label = StringUtils.isEmpty(device.getDetails().getFriendlyName()) ? device.getDisplayString()
                     : device.getDetails().getFriendlyName();
             Map<String, Object> properties = new HashMap<>(2, 1);
-            properties.put(PioneerAvrBindingConstants.HOST_PARAMETER,
+            properties.put(PioneerAvrBindingConstants.PARAMETER_HOST,
                     device.getIdentity().getDescriptorURL().getHost());
-            properties.put(PioneerAvrBindingConstants.PROTOCOL_PARAMETER, PioneerAvrBindingConstants.IP_PROTOCOL_NAME);
+            properties.put(PioneerAvrBindingConstants.PARAMETER_TCP_PORT,
+                    getTcpPort(device.getIdentity().getDescriptorURL().getHost()));
+            properties.put(PioneerAvrBindingConstants.PARAMETER_USE_SERIAL, false);
 
             result = DiscoveryResultBuilder.create(thingUid).withLabel(label).withProperties(properties).build();
         }
@@ -105,21 +107,12 @@ public class PioneerAvrDiscoveryParticipant implements UpnpDiscoveryParticipant 
                     String deviceModel = device.getDetails().getModelDetails() != null
                             ? device.getDetails().getModelDetails().getModelName()
                             : null;
-
-                    ThingTypeUID thingTypeUID = PioneerAvrBindingConstants.IP_AVR_THING_TYPE;
-
-                    if (isSupportedDeviceModel(deviceModel, PioneerAvrBindingConstants.SUPPORTED_DEVICE_MODELS2016)) {
-                        thingTypeUID = PioneerAvrBindingConstants.IP_AVR_THING_TYPE2016;
-                    } else if (isSupportedDeviceModel(deviceModel,
-                            PioneerAvrBindingConstants.SUPPORTED_DEVICE_MODELS2015)) {
-                        thingTypeUID = PioneerAvrBindingConstants.IP_AVR_THING_TYPE2015;
-                    } else if (isSupportedDeviceModel(deviceModel,
-                            PioneerAvrBindingConstants.SUPPORTED_DEVICE_MODELS2014)) {
-                        thingTypeUID = PioneerAvrBindingConstants.IP_AVR_THING_TYPE2014;
-                    } else if (!isSupportedDeviceModel(deviceModel,
-                            PioneerAvrBindingConstants.SUPPORTED_DEVICE_MODELS)) {
-                        logger.debug("Device model {} not supported. Odd behaviors may happen.", deviceModel);
-                        thingTypeUID = PioneerAvrBindingConstants.IP_AVR_UNSUPPORTED_THING_TYPE;
+                    ThingTypeUID thingTypeUID = getThingTypeUID(deviceModel);
+                    logger.info("AVR model {} found.", deviceModel);
+                    if (thingTypeUID.equals(ConfigurableModel.THING_TYPE_UID)) {
+                        logger.warn(
+                                "Device model {} not officialy supported. You may have to try different configurations for best results.",
+                                deviceModel);
                     }
 
                     result = new ThingUID(thingTypeUID, device.getIdentity().getUdn().getIdentifierString());
@@ -131,18 +124,54 @@ public class PioneerAvrDiscoveryParticipant implements UpnpDiscoveryParticipant 
     }
 
     /**
-     * Return true only if the given device model is supported.
+     * Return the {@link ThingTypeUID} based on the deviceModel.
      *
      * @param deviceModel
      * @return
      */
-    private boolean isSupportedDeviceModel(String deviceModel, Set<String> supportedDeviceModels) {
-        return StringUtils.isNotBlank(deviceModel)
-                && !Collections2.filter(supportedDeviceModels, new Predicate<String>() {
-                    @Override
-                    public boolean apply(String input) {
-                        return StringUtils.startsWithIgnoreCase(deviceModel, input);
-                    }
-                }).isEmpty();
+    private ThingTypeUID getThingTypeUID(String deviceModel) {
+        ThingTypeUID result = ConfigurableModel.THING_TYPE_UID;
+        for (ThingTypeUID thingTypeUID : supportedThingTypes) {
+            if (StringUtils.startsWithIgnoreCase(deviceModel, thingTypeUID.getId())) {
+                result = thingTypeUID;
+                break;
+            }
+        }
+        return result;
     }
+
+    /**
+     * Try to connect to the to possible telnet TCP ports of the AVR (depending of the model).
+     *
+     * @return
+     */
+    private Integer getTcpPort(String host) {
+        Integer port = null;
+        try (Socket socket = new Socket()) {
+            try {
+                // Test the first possible telnet port.
+                port = IpAvrConnection.DEFAULT_TELNET_PORT_1;
+                socket.connect(new InetSocketAddress(host, port), 1000);
+                logger.info("Detected telnet port {} on AVR @{}", port, host);
+            } catch (IOException e) {
+                try {
+                    // Test the second possible telnet port if the first has failed.
+                    port = IpAvrConnection.DEFAULT_TELNET_PORT_2;
+                    socket.connect(new InetSocketAddress(host, port), 1000);
+                    logger.info("Detected telnet port {} on AVR @{}", port, host);
+                } catch (IOException e2) {
+                    logger.warn("Unable to detect the telnet port on AVR @{}", host);
+                }
+            }
+        } catch (IOException e1) {
+            logger.error("Error closing telnet port auto detect socket.");
+        }
+
+        return port;
+    }
+
+    public void setModelManager(ThingTypeManager modelManager) {
+        this.modelManager = modelManager;
+    }
+
 }

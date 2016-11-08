@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2017 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,86 +10,170 @@ package org.openhab.binding.pioneeravr.protocol.utils;
 
 import java.text.DecimalFormat;
 
+import org.apache.commons.lang.StringUtils;
+import org.openhab.binding.pioneeravr.internal.models.properties.ModelProperties;
+
 /**
  *
  * @author Antoine Besnard - Initial contribution
  */
 public final class VolumeConverter {
 
-    // Volume Format / MAX_IP / Min_DB for Zones
-    // Zone1 Command ***VL 000 to 185 (-80.0dB - +12.0dB - 1step = 0.5dB)
-    // Zone2 Command **ZV 00 to 81 (-80.0dB - + 0.0dB - 1step = 1.0dB)
-    // Zone3 Command **YV 00 to 81 (-80.0dB - + 0.0dB - 1step = 1.0dB)
-    // HDZone Command **YV 00 to 81 (-80.0dB - + 0.0dB - 1step = 1.0dB)
-    private static final String[] IP_CONTROL_VOLUME_FORMAT = { "000", "00", "00", "00" };
-    private static final String[] IP_CONTROL_VOLUME_DEFAULT_VALUE = { "000", "00", "00", "00" };
+    private ModelProperties modelProperties;
 
-    private static final double[] MAX_IP_CONTROL_VOLUME = { 184, 80, 80, 80 };
-    private static final double[] MIN_DB_VOLUME = { 80, 80, 80, 80 };
+    public VolumeConverter(ModelProperties modelProperties) {
+        this.modelProperties = modelProperties;
+    }
+
+    public double getIpUnitsByDb(int zone) {
+        // 1-step of Zone 1: 0.5dB => 2 units by dB
+        // 1-step of other Zones: 1dB => 1 unit by dB
+        return zone == 1 ? 2 : 1;
+    }
+
+    public double getStepDbVolume(int zone) {
+        return modelProperties.getVolumeStepDb(zone);
+    }
+
+    public double getMaxDbVolume(int zone) {
+        return modelProperties.getVolumeMaxDb(zone);
+    }
+
+    public double getMinDbVolume(int zone) {
+        return modelProperties.getVolumeMinDb(zone);
+    }
 
     /**
      * Return the double value of the volume from the value received in the IpControl response.
      *
      * @param ipControlVolume
+     * @param zone
      * @return the volume in Db
      */
-    public static double convertFromIpControlVolumeToDb(String ipControlVolume, int zone) {
+    public double convertFromIpControlVolumeToDb(String ipControlVolume, int zone) {
         validateZone(zone - 1);
-        double ipControlVolumeInt = Double.parseDouble(ipControlVolume);
-        return ((ipControlVolumeInt - 1d) / 2d) - MIN_DB_VOLUME[zone - 1];
+        double volumePercent = convertFromIpControlVolumeToPercent(ipControlVolume, zone);
+        return convertFromPercentToDb(volumePercent, zone);
     }
 
     /**
      * Return the string parameter to send to the AVR based on the given volume.
      *
      * @param volumeDb
+     * @param zone
      * @return the volume for IpControlRequest
      */
-    public static String convertFromDbToIpControlVolume(double volumeDb, int zone) {
+    public String convertFromDbToIpControlVolume(double volumeDb, int zone) {
         validateZone(zone - 1);
-        double ipControlVolume = ((MIN_DB_VOLUME[zone - 1] + volumeDb) * 2d) + 1d;
-        return formatIpControlVolume(ipControlVolume, zone);
+        double volumePercent = convertFromDbToPercent(volumeDb, zone);
+        return convertFromPercentToIpControlVolume(volumePercent, zone);
     }
 
     /**
-     * Return the String parameter to send to the AVR based on the given persentage of the max volume level.
+     * Return the volume in percent from the volume in dB.
+     *
+     * @param volumeDb
+     * @param zone
+     * @return
+     */
+    public double convertFromDbToPercent(double volumeDb, int zone) {
+        validateZone(zone - 1);
+        double maxDb = modelProperties.getVolumeMaxDb(zone);
+        double minDb = modelProperties.getVolumeMinDb(zone);
+        double volumeRange = Math.abs(minDb) + Math.abs(maxDb);
+        double volumeShift = Math.abs(minDb - volumeDb);
+
+        return volumeShift * 100d / volumeRange;
+    }
+
+    /**
+     * Return the volume in dB from the volume in percent.
      *
      * @param volumePercent
+     * @param zone
+     * @return
+     */
+    public double convertFromPercentToDb(double volumePercent, int zone) {
+        validateZone(zone - 1);
+        double maxDb = modelProperties.getVolumeMaxDb(zone);
+        double minDb = modelProperties.getVolumeMinDb(zone);
+        double volumeRange = Math.abs(minDb) + Math.abs(maxDb);
+        double volumeShift = volumeRange * volumePercent / 100d;
+
+        return minDb + volumeShift;
+    }
+
+    /**
+     * Return the String parameter to send to the AVR based on the given percentage of the max volume level.
+     *
+     * @param volumePercent
+     * @param zone
      * @return the volume for IpControlRequest
      */
-    public static String convertFromPercentToIpControlVolume(double volumePercent, int zone) {
+    public String convertFromPercentToIpControlVolume(double volumePercent, int zone) {
         validateZone(zone - 1);
-        double ipControlVolume = 1 + (volumePercent * MAX_IP_CONTROL_VOLUME[zone - 1] / 100);
+        double ipUnitsByDb = getIpUnitsByDb(zone);
+        double maxDb = modelProperties.getVolumeMaxDb(zone);
+        double minDb = modelProperties.getVolumeMinDb(zone);
+        double maxIpControlVolume = ((maxDb - minDb) * ipUnitsByDb) + 1d;
+        double ipControlVolume = volumePercent * maxIpControlVolume / 100;
         return formatIpControlVolume(ipControlVolume, zone);
     }
 
     /**
-     * Return the percentage of the max volume levelfrom the value received in the IpControl response.
+     * Return the percentage of the max volume level from the value received in the IpControl response.
      *
      * @param ipControlVolume
+     * @param zone
      * @return the volume percentage
      */
-    public static double convertFromIpControlVolumeToPercent(String ipControlVolume, int zone) {
+    public double convertFromIpControlVolumeToPercent(String ipControlVolume, int zone) {
         validateZone(zone - 1);
         double ipControlVolumeInt = Double.parseDouble(ipControlVolume);
-        return ((ipControlVolumeInt - 1d) * 100d) / MAX_IP_CONTROL_VOLUME[zone - 1];
+        double ipUnitsByDb = getIpUnitsByDb(zone);
+        double maxDb = modelProperties.getVolumeMaxDb(zone);
+        double minDb = modelProperties.getVolumeMinDb(zone);
+        double maxIpControlVolume = ((maxDb - minDb) * ipUnitsByDb) + 1d;
+        return (ipControlVolumeInt * 100d) / maxIpControlVolume;
+    }
+
+    /**
+     * Return the formatter to use for the given zone.
+     *
+     * @return
+     */
+    public DecimalFormat getIpControlVolumeFormatter(int zone) {
+        validateZone(zone);
+        double maxDb = modelProperties.getVolumeMaxDb(zone);
+        double minDb = modelProperties.getVolumeMinDb(zone);
+        double stepDb = modelProperties.getVolumeStepDb(zone);
+        int maxIpControlValue = Double.valueOf((maxDb - minDb) / stepDb).intValue();
+
+        // Format is of type "000" where there are a number of 0 equals to the number of digits of the max value of the
+        // ipControl volume for the given zone.
+        DecimalFormat decimalFormat = new DecimalFormat(
+                StringUtils.repeat("0", (int) (Math.log10(maxIpControlValue) + 1)));
+
+        return decimalFormat;
     }
 
     /**
      * Format the given double value to an IpControl volume.
      *
      * @param ipControlVolume
+     * @param zone
      * @return
      */
-    private static String formatIpControlVolume(double ipControlVolume, int zone) {
+    public String formatIpControlVolume(double ipControlVolume, int zone) {
         validateZone(zone - 1);
-        DecimalFormat formatter = new DecimalFormat(IP_CONTROL_VOLUME_FORMAT[zone - 1]);
-        return formatter.format(Math.round(ipControlVolume));
+        String result = getIpControlVolumeFormatter(zone).format(Math.round(ipControlVolume));
+        return result;
     }
 
-    private static void validateZone(int zone) {
-        if (zone < 0 || zone > 3) {
-            throw new IllegalArgumentException("An unexpected zone was received, the value should be in the range 0-3");
+    private void validateZone(int zone) {
+        if (zone < 0 || zone > modelProperties.getNbZones()) {
+            throw new IllegalArgumentException("An unexpected zone was received, the value should be in the range 0-"
+                    + (modelProperties.getNbZones() - 1));
         }
     }
 

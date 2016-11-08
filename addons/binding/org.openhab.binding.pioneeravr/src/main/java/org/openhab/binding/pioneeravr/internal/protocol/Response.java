@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2017 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,19 +18,29 @@ import org.openhab.binding.pioneeravr.protocol.AvrResponse;
 /**
  * Represent an AVR response.
  *
- * @author Antoine Besnard - Initial contribution
+ * @author Antoine Besnard
+ *
  */
 public class Response implements AvrResponse {
 
     /**
      * List of all supported responses coming from AVR.
+     *
+     * @author Antoine Besnard
+     *
      */
     public enum ResponseType implements AvrResponse.AvrResponseType {
-        POWER_STATE("[0-2]", "PWR", "APR", "BPR", "ZEP"),
-        VOLUME_LEVEL("[0-9]{2,3}", "VOL", "ZV", "YV", "HZV"),
-        MUTE_STATE("[0-1]", "MUT", "Z2MUT", "Z3MUT", "HZM"),
-        INPUT_SOURCE_CHANNEL("[0-9]{2}", "FN", "Z2F", "Z3F", "ZEA"),
-        DISPLAY_INFORMATION("[0-9a-fA-F]{30}", "FL");
+    // NONE is a fake response for requests that do not expect responses or when responses should be treated as
+    // notifications only.
+    NONE(false, "", ""),
+    POWER_STATE(false, "[0-1]", "PWR", "APR", "BPR"),
+    VOLUME_LEVEL(false, "[0-9]{2,3}", "VOL", "ZV", "YV"),
+    MUTE_STATE(false, "[0-1]", "MUT", "Z2MUT", "Z3MUT"),
+    INPUT_SOURCE_CHANNEL(false, "[0-9]{2}", "FN", "Z2F", "Z3F"),
+    DISPLAY_INFORMATION(false, "[0-9a-fA-F]{30}", "FL"),
+    UNKNOWN_COMMAND(true, "", "E4"),
+    UNKNOWN_PARAMETER(true, "", "E6"),
+    GENERIC_ERROR(true, "", "R");
 
         private String[] responsePrefixZone;
 
@@ -38,7 +48,10 @@ public class Response implements AvrResponse {
 
         private Pattern[] matchPatternZone;
 
-        private ResponseType(String parameterPattern, String... responsePrefixZone) {
+        private boolean isError;
+
+        private ResponseType(boolean isError, String parameterPattern, String... responsePrefixZone) {
+            this.isError = isError;
             this.responsePrefixZone = responsePrefixZone;
             this.parameterPattern = parameterPattern;
 
@@ -64,6 +77,11 @@ public class Response implements AvrResponse {
         @Override
         public String getParameterPattern() {
             return parameterPattern;
+        }
+
+        @Override
+        public boolean isError() {
+            return isError;
         }
 
         @Override
@@ -107,12 +125,26 @@ public class Response implements AvrResponse {
 
     private String parameter;
 
+    public static Response getReponseNone(int zone) {
+        return new Response(ResponseType.NONE, zone);
+    }
+
+    private Response(ResponseType responseType, int zone) {
+        this(responseType, zone, null);
+    }
+
+    protected Response(ResponseType responseType, int zone, String parameter) {
+        this.responseType = responseType;
+        this.zone = zone;
+        this.parameter = parameter;
+    }
+
     public Response(String responseData) throws AvrConnectionException {
         if (StringUtils.isEmpty(responseData)) {
             throw new AvrConnectionException("responseData is empty. Cannot parse the response.");
         }
 
-        parseResponseType(responseData);
+        parseResponse(responseData);
 
         if (this.responseType == null) {
             throw new AvrConnectionException("Cannot find the responseType of the responseData " + responseData);
@@ -129,7 +161,7 @@ public class Response implements AvrResponse {
      * @param responseData
      * @return
      */
-    private void parseResponseType(String responseData) {
+    private void parseResponse(String responseData) {
         for (ResponseType responseType : ResponseType.values()) {
             zone = responseType.match(responseData);
             if (zone != null) {
@@ -157,6 +189,11 @@ public class Response implements AvrResponse {
     @Override
     public Integer getZone() {
         return this.zone;
+    }
+
+    @Override
+    public String toString() {
+        return "Response [responseType=" + responseType + ", zone=" + zone + ", parameter=" + parameter + "]";
     }
 
 }

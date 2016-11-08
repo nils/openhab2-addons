@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.openhab.binding.pioneeravr.internal.protocol.StreamAvrConnection;
 import org.slf4j.Logger;
@@ -28,8 +29,9 @@ public class IpAvrConnection extends StreamAvrConnection {
 
     private final Logger logger = LoggerFactory.getLogger(IpAvrConnection.class);
 
-    /** default port for IP communication **/
-    public static final int DEFAULT_IPCONTROL_PORT = 8102;
+    /** Possible default ports for IP communication **/
+    public static final int DEFAULT_TELNET_PORT_1 = 23;
+    public static final int DEFAULT_TELNET_PORT_2 = 8102;
 
     /** Connection timeout in milliseconds **/
     private static final int CONNECTION_TIMEOUT = 3000;
@@ -42,13 +44,17 @@ public class IpAvrConnection extends StreamAvrConnection {
 
     private Socket ipControlSocket;
 
-    public IpAvrConnection(String receiverHost) {
-        this(receiverHost, null);
+    public IpAvrConnection(ScheduledExecutorService executorService, String receiverHost) {
+        this(executorService, receiverHost, null);
     }
 
-    public IpAvrConnection(String receiverHost, Integer ipControlPort) {
+    public IpAvrConnection(ScheduledExecutorService executorService, String receiverHost, Integer receiverPort) {
+        super(executorService);
         this.receiverHost = receiverHost;
-        this.receiverPort = ipControlPort != null && ipControlPort >= 1 ? ipControlPort : DEFAULT_IPCONTROL_PORT;
+        this.receiverPort = receiverPort != null && receiverPort >= 1 && receiverPort <= 65535 ? receiverPort
+                : DEFAULT_TELNET_PORT_1;
+
+        logger.info("Using port {} for AVR@{}.", receiverPort, receiverHost);
     }
 
     @Override
