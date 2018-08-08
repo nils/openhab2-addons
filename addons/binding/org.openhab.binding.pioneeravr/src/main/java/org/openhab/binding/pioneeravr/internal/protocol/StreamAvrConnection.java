@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2017 by the respective copyright holders.
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -409,13 +409,13 @@ public abstract class StreamAvrConnection implements AvrConnection {
                                     // If it is a response, save it and notify the request sender.
                                     receivedResponse = message;
                                     responseLock.notify();
-                                } else {
-                                    // If it is not a response to a request, then it is a notification
-                                    // => Notify the listeners
-                                    AvrNotificationEvent event = new AvrNotificationEvent(StreamAvrConnection.this,
-                                            message);
-                                    notifyListeners(event);
-                                }
+                                } // else {
+                                  // If it is not a response to a request, then it is a notification
+                                  // => Notify the listeners
+                                AvrNotificationEvent event = new AvrNotificationEvent(StreamAvrConnection.this,
+                                        message);
+                                notifyListeners(event);
+                                // }
                             }
                         } catch (AvrConnectionException e) {
                             logger.debug("Message dropped. Unknown reponseType: {}", e.getMessage());

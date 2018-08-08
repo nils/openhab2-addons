@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2017 by the respective copyright holders.
+ * Copyright (c) 2010-2018 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,8 +30,8 @@ public class SimpleCommand implements AvrCommand {
     POWER_ON(ResponseType.NONE, "PO", "APO", "BPO"),
     POWER_OFF(ResponseType.NONE, "PF", "APF", "BPF"),
     POWER_QUERY(ResponseType.POWER_STATE, "?P", "?AP", "?BP"),
-    VOLUME_UP(ResponseType.NONE, "VU", "ZU", "YU"),
-    VOLUME_DOWN(ResponseType.NONE, "VD", "ZD", "YD"),
+    VOLUME_UP(ResponseType.VOLUME_LEVEL, "VU", "ZU", "YU"),
+    VOLUME_DOWN(ResponseType.VOLUME_LEVEL, "VD", "ZD", "YD"),
     VOLUME_QUERY(ResponseType.VOLUME_LEVEL, "?V", "?ZV", "?YV"),
     MUTE_ON(ResponseType.MUTE_STATE, "MO", "Z2MO", "Z3MO"),
     MUTE_OFF(ResponseType.MUTE_STATE, "MF", "Z2MF", "Z3MF"),

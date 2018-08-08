@@ -8,14 +8,12 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-SymbolicName: org.openhab.binding.pioneeravr;singleton:=true
 Bundle-Vendor: openHAB
 Bundle-Version: 2.4.0.qualifier
-Export-Package:
- org.openhab.binding.pioneeravr,
+Export-Package: org.openhab.binding.pioneeravr,
  org.openhab.binding.pioneeravr.protocol,
  org.openhab.binding.pioneeravr.protocol.event,
  org.openhab.binding.pioneeravr.protocol.states,
  org.openhab.binding.pioneeravr.protocol.utils
-Import-Package:
- com.google.common.base,
+Import-Package: com.google.common.base,
  com.google.common.collect,
  gnu.io;resolution:=optional,
  org.apache.commons.collections,
