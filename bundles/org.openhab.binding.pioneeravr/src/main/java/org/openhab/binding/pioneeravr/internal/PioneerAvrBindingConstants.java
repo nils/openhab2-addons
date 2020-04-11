@@ -45,9 +45,9 @@ public class PioneerAvrBindingConstants {
             Stream.of("SC-89", "SC-LX88", "SC-87", "SC-LX78", "SC-85", "SC-LX58", "SC-82", "SC-2024", "SC-81", "VSX-80")
                     .collect(Collectors.toSet()));
 
-    public static final Set<String> SUPPORTED_DEVICE_MODELS2016 = Collections.unmodifiableSet(
-            Stream.of("SC-99", "SC-LX89", "SC-97", "SC-LX79", "SC-95", "SC-LX59", "SC-92", "SC-91", "VSX-90", "VSX-45", "VSX-830")
-                    .collect(Collectors.toSet()));
+    public static final Set<String> SUPPORTED_DEVICE_MODELS2016 = Collections
+            .unmodifiableSet(Stream.of("SC-99", "SC-LX89", "SC-97", "SC-LX79", "SC-95", "SC-LX59", "SC-92", "SC-91",
+                    "VSX-90", "VSX-45", "VSX-830").collect(Collectors.toSet()));
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID IP_AVR_THING_TYPE = new ThingTypeUID(BINDING_ID, "ipAvr");
