@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.pioneeravr.internal.protocol.event;
 
+import java.io.IOException;
 import java.util.EventListener;
 
 /**
@@ -26,7 +27,9 @@ public interface AvrUpdateListener extends EventListener {
 
     /**
      * Procedure for receive status update from Pioneer receiver.
+     * 
+     * @throws IOException
      */
-    public void statusUpdateReceived(AvrStatusUpdateEvent event);
+    public void statusUpdateReceived(AvrStatusUpdateEvent event) throws IOException;
 
 }

@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.pioneeravr.internal.handler;
 
+import java.io.IOException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -23,6 +24,7 @@ import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.UnDefType;
@@ -86,6 +88,8 @@ public abstract class AbstractAvrHandler extends BaseThingHandler
             try {
                 logger.debug("Checking status of AVR @{}", connection.getConnectionName());
                 checkStatus();
+            } catch (IOException e) {
+                this.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             } catch (LinkageError e) {
                 logger.warn(
                         "Failed to check the status for AVR @{}. If a Serial link is used to connect to the AVR, please check that the Bundle org.openhab.io.transport.serial is available. Cause: {}",
@@ -115,8 +119,10 @@ public abstract class AbstractAvrHandler extends BaseThingHandler
 
     /**
      * Called when a Power ON state update is received from the AVR for the given zone.
+     * 
+     * @throws IOException
      */
-    public void onPowerOn(int zone) {
+    public void onPowerOn(int zone) throws IOException {
         // When the AVR is Powered ON, query the volume, the mute state and the source input of the zone
         connection.sendVolumeQuery(zone);
         connection.sendMuteQuery(zone);
@@ -141,19 +147,17 @@ public abstract class AbstractAvrHandler extends BaseThingHandler
      * Check the status of the AVR. Return true if the AVR is online, else return false.
      *
      * @return
+     * @throws IOException
      */
-    private void checkStatus() {
+    private void checkStatus() throws IOException {
         // If the power query request has not been sent, the connection to the
         // AVR has failed. So update its status to OFFLINE.
-        if (!connection.sendPowerQuery(1)) {
-            updateStatus(ThingStatus.OFFLINE);
-        } else {
-            // If the power query has succeeded, the AVR status is ONLINE.
-            updateStatus(ThingStatus.ONLINE);
-            // Then send a power query for zone 2 and 3
-            connection.sendPowerQuery(2);
-            connection.sendPowerQuery(3);
-        }
+        connection.sendPowerQuery(1);
+        // If the power query has succeeded, the AVR status is ONLINE.
+        updateStatus(ThingStatus.ONLINE);
+        // Then send a power query for zone 2 and 3
+        connection.sendPowerQuery(2);
+        connection.sendPowerQuery(3);
     }
 
     /**
@@ -162,28 +166,23 @@ public abstract class AbstractAvrHandler extends BaseThingHandler
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         try {
-            boolean commandSent = false;
             boolean unknownCommand = false;
 
             if (channelUID.getId().contains(PioneerAvrBindingConstants.POWER_CHANNEL)) {
-                commandSent = connection.sendPowerCommand(command, getZoneFromChannelUID(channelUID.getId()));
+                connection.sendPowerCommand(command, getZoneFromChannelUID(channelUID.getId()));
             } else if (channelUID.getId().contains(PioneerAvrBindingConstants.VOLUME_DIMMER_CHANNEL)
                     || channelUID.getId().contains(PioneerAvrBindingConstants.VOLUME_DB_CHANNEL)) {
-                commandSent = connection.sendVolumeCommand(command, getZoneFromChannelUID(channelUID.getId()));
+                connection.sendVolumeCommand(command, getZoneFromChannelUID(channelUID.getId()));
             } else if (channelUID.getId().contains(PioneerAvrBindingConstants.SET_INPUT_SOURCE_CHANNEL)) {
-                commandSent = connection.sendInputSourceCommand(command, getZoneFromChannelUID(channelUID.getId()));
+                connection.sendInputSourceCommand(command, getZoneFromChannelUID(channelUID.getId()));
             } else if (channelUID.getId().contains(PioneerAvrBindingConstants.LISTENING_MODE_CHANNEL)) {
-                commandSent = connection.sendListeningModeCommand(command, getZoneFromChannelUID(channelUID.getId()));
+                connection.sendListeningModeCommand(command, getZoneFromChannelUID(channelUID.getId()));
             } else if (channelUID.getId().contains(PioneerAvrBindingConstants.MUTE_CHANNEL)) {
-                commandSent = connection.sendMuteCommand(command, getZoneFromChannelUID(channelUID.getId()));
-            } else {
-                unknownCommand = true;
+                connection.sendMuteCommand(command, getZoneFromChannelUID(channelUID.getId()));
             }
-
-            // If the command is not unknown and has not been sent, the AVR is Offline
-            if (!commandSent && !unknownCommand) {
-                onDisconnection();
-            }
+        } catch (IOException e) {
+            this.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            onDisconnection();
         } catch (CommandTypeNotSupportedException e) {
             logger.warn("Unsupported command type received for channel {}.", channelUID.getId());
         }
@@ -191,9 +190,11 @@ public abstract class AbstractAvrHandler extends BaseThingHandler
 
     /**
      * Called when a status update is received from the AVR.
+     * 
+     * @throws IOException
      */
     @Override
-    public void statusUpdateReceived(AvrStatusUpdateEvent event) {
+    public void statusUpdateReceived(AvrStatusUpdateEvent event) throws IOException {
         try {
             AvrResponse response = RequestResponseFactory.getIpControlResponse(event.getData());
 
@@ -255,8 +256,9 @@ public abstract class AbstractAvrHandler extends BaseThingHandler
      * Notify an AVR power state update to openHAB
      *
      * @param response
+     * @throws IOException
      */
-    private void managePowerStateUpdate(AvrResponse response) {
+    private void managePowerStateUpdate(AvrResponse response) throws IOException {
         OnOffType state = PowerStateValues.ON_VALUE.equals(response.getParameterValue()) ? OnOffType.ON : OnOffType.OFF;
 
         // When a Power ON state update is received, call the onPowerOn method.

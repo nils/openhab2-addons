@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.pioneeravr.internal.protocol.avr;
 
+import java.io.IOException;
+
 import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.pioneeravr.internal.protocol.event.AvrDisconnectionListener;
 import org.openhab.binding.pioneeravr.internal.protocol.event.AvrUpdateListener;
@@ -61,40 +63,45 @@ public interface AvrConnection {
      *
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendPowerQuery(int zone);
+    public AvrResponse sendPowerQuery(int zone) throws IOException;
 
     /**
      * Send a volume level query to the AVR
      *
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendVolumeQuery(int zone);
+    public AvrResponse sendVolumeQuery(int zone) throws IOException;
 
     /**
      * Send a mute state query to the AVR
      *
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendMuteQuery(int zone);
+    public AvrResponse sendMuteQuery(int zone) throws IOException;
 
     /**
      * Send a source input state query to the AVR
      *
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendSourceInputQuery(int zone);
+    public AvrResponse sendSourceInputQuery(int zone) throws IOException;
 
     /**
      * Send a listening mode state query to the AVR
      *
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendListeningModeQuery(int zone);
+    public AvrResponse sendListeningModeQuery(int zone) throws IOException;
 
     /**
      * Send a power command ot the AVR based on the openHAB command
@@ -102,8 +109,9 @@ public interface AvrConnection {
      * @param command
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendPowerCommand(Command command, int zone) throws CommandTypeNotSupportedException;
+    public AvrResponse sendPowerCommand(Command command, int zone) throws CommandTypeNotSupportedException, IOException;
 
     /**
      * Send a volume command to the AVR based on the openHAB command
@@ -111,8 +119,10 @@ public interface AvrConnection {
      * @param command
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendVolumeCommand(Command command, int zone) throws CommandTypeNotSupportedException;
+    public AvrResponse sendVolumeCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException;
 
     /**
      * Send a source input selection command to the AVR based on the openHAB command
@@ -120,8 +130,10 @@ public interface AvrConnection {
      * @param command
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendInputSourceCommand(Command command, int zone) throws CommandTypeNotSupportedException;
+    public AvrResponse sendInputSourceCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException;
 
     /**
      * Send a listening mode selection command to the AVR based on the openHAB command
@@ -129,8 +141,10 @@ public interface AvrConnection {
      * @param command
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendListeningModeCommand(Command command, int zone) throws CommandTypeNotSupportedException;
+    public AvrResponse sendListeningModeCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException;
 
     /**
      * Send a mute command to the AVR based on the openHAB command
@@ -138,8 +152,9 @@ public interface AvrConnection {
      * @param command
      * @param zone
      * @return
+     * @throws IOException
      */
-    public boolean sendMuteCommand(Command command, int zone) throws CommandTypeNotSupportedException;
+    public AvrResponse sendMuteCommand(Command command, int zone) throws CommandTypeNotSupportedException, IOException;
 
     /**
      * Return the connection name

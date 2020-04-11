@@ -35,6 +35,7 @@ import org.openhab.binding.pioneeravr.internal.protocol.ParameterizedCommand.Par
 import org.openhab.binding.pioneeravr.internal.protocol.SimpleCommand.SimpleCommandType;
 import org.openhab.binding.pioneeravr.internal.protocol.avr.AvrCommand;
 import org.openhab.binding.pioneeravr.internal.protocol.avr.AvrConnection;
+import org.openhab.binding.pioneeravr.internal.protocol.avr.AvrResponse;
 import org.openhab.binding.pioneeravr.internal.protocol.avr.CommandTypeNotSupportedException;
 import org.openhab.binding.pioneeravr.internal.protocol.event.AvrDisconnectionEvent;
 import org.openhab.binding.pioneeravr.internal.protocol.event.AvrDisconnectionListener;
@@ -141,14 +142,18 @@ public abstract class StreamAvrConnection implements AvrConnection {
         }
     }
 
+    public AvrResponse sendCommand(AvrCommand ipControlCommand) throws IOException {
+        return sendCommand(ipControlCommand, true);
+    }
+
     /**
      * Sends to command to the receiver. It does not wait for a reply.
      *
-     * @param ipControlCommand
-     *            the command to send.
+     * @param ipControlCommand the command to send.
+     * @throws IOException
      **/
-    protected boolean sendCommand(AvrCommand ipControlCommand) {
-        boolean isSent = false;
+    protected synchronized AvrResponse sendCommand(AvrCommand ipControlCommand, boolean waitForResponse)
+            throws IOException {
         if (connect()) {
             String command = ipControlCommand.getCommand();
             try {
@@ -157,46 +162,72 @@ public abstract class StreamAvrConnection implements AvrConnection {
                 }
                 outputStream.writeBytes(command);
                 outputStream.flush();
-                isSent = true;
+
+                logger.debug("Command sent to AVR @{}: {}", getConnectionName(), command);
+
+                if (ipControlCommand.isResponseExpected() && waitForResponse) {
+                    // If a response is expected, wait until the response is received.
+                    inputStreamReader.setSentCommand(ipControlCommand);
+                    try {
+                        inputStreamReader.responseLock.wait(READ_TIMEOUT);
+                        // If receivedResponse is null, it is a timeout
+                        if (ipControlCommand.getResponse() == null) {
+                            throw new IOException(
+                                    "No response received after " + READ_TIMEOUT + " ms for the command " + command);
+                        }
+
+                    } catch (InterruptedException e) {
+                        // If the thread is interrupted, do nothing special, just end the treatment.
+                    } finally {
+                        // Reset the context for next command to send.
+                        inputStreamReader.setSentCommand(null);
+                    }
+                    return ipControlCommand.getResponse();
+                } else {
+                    // NONE response if no response is expected or we do not want to wait for it.
+                    return Response.getReponseNone(ipControlCommand.getZone());
+                }
+                // If receivedResponse is null, it is a timeout
             } catch (IOException ioException) {
                 logger.error("Error occurred when sending command", ioException);
                 // If an error occurs, close the connection
                 close();
-            }
 
-            logger.debug("Command sent to AVR @{}: {}", getConnectionName(), command);
+                throw ioException;
+            }
         }
 
-        return isSent;
+        throw new IOException("Not connected");
     }
 
     @Override
-    public boolean sendPowerQuery(int zone) {
+    public AvrResponse sendPowerQuery(int zone) throws IOException {
         return sendCommand(RequestResponseFactory.getIpControlCommand(SimpleCommandType.POWER_QUERY, zone));
     }
 
     @Override
-    public boolean sendVolumeQuery(int zone) {
+    public AvrResponse sendVolumeQuery(int zone) throws IOException {
         return sendCommand(RequestResponseFactory.getIpControlCommand(SimpleCommandType.VOLUME_QUERY, zone));
     }
 
     @Override
-    public boolean sendMuteQuery(int zone) {
+    public AvrResponse sendMuteQuery(int zone) throws IOException {
         return sendCommand(RequestResponseFactory.getIpControlCommand(SimpleCommandType.MUTE_QUERY, zone));
     }
 
     @Override
-    public boolean sendSourceInputQuery(int zone) {
+    public AvrResponse sendSourceInputQuery(int zone) throws IOException {
         return sendCommand(RequestResponseFactory.getIpControlCommand(SimpleCommandType.INPUT_QUERY, zone));
     }
 
     @Override
-    public boolean sendListeningModeQuery(int zone) {
+    public AvrResponse sendListeningModeQuery(int zone) throws IOException {
         return sendCommand(RequestResponseFactory.getIpControlCommand(SimpleCommandType.LISTENING_MODE_QUERY, zone));
     }
 
     @Override
-    public boolean sendPowerCommand(Command command, int zone) throws CommandTypeNotSupportedException {
+    public AvrResponse sendPowerCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException {
         AvrCommand commandToSend = null;
 
         if (command == OnOffType.ON) {
@@ -222,8 +253,9 @@ public abstract class StreamAvrConnection implements AvrConnection {
     }
 
     @Override
-    public boolean sendVolumeCommand(Command command, int zone) throws CommandTypeNotSupportedException {
-        boolean commandSent = false;
+    public AvrResponse sendVolumeCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException {
+        AvrResponse commandSent = null;
 
         // The OnOffType for volume is equal to the Mute command
         if (command instanceof OnOffType) {
@@ -255,7 +287,8 @@ public abstract class StreamAvrConnection implements AvrConnection {
     }
 
     @Override
-    public boolean sendInputSourceCommand(Command command, int zone) throws CommandTypeNotSupportedException {
+    public AvrResponse sendInputSourceCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException {
         AvrCommand commandToSend = null;
 
         if (command == IncreaseDecreaseType.INCREASE) {
@@ -274,14 +307,17 @@ public abstract class StreamAvrConnection implements AvrConnection {
     }
 
     @Override
-    public boolean sendListeningModeCommand(Command command, int zone) throws CommandTypeNotSupportedException {
+    public AvrResponse sendListeningModeCommand(Command command, int zone)
+            throws CommandTypeNotSupportedException, IOException {
         AvrCommand commandToSend = null;
 
         if (command == IncreaseDecreaseType.INCREASE) {
-            commandToSend = RequestResponseFactory.getIpControlCommand(SimpleCommandType.LISTENING_MODE_CHANGE_CYCLIC, zone);
+            commandToSend = RequestResponseFactory.getIpControlCommand(SimpleCommandType.LISTENING_MODE_CHANGE_CYCLIC,
+                    zone);
         } else if (command instanceof StringType) {
             String listeningModeValue = ((StringType) command).toString();
-            commandToSend = RequestResponseFactory.getIpControlCommand(ParameterizedCommandType.LISTENING_MODE_SET, zone)
+            commandToSend = RequestResponseFactory
+                    .getIpControlCommand(ParameterizedCommandType.LISTENING_MODE_SET, zone)
                     .setParameter(listeningModeValue);
         } else {
             throw new CommandTypeNotSupportedException("Command type not supported.");
@@ -291,7 +327,7 @@ public abstract class StreamAvrConnection implements AvrConnection {
     }
 
     @Override
-    public boolean sendMuteCommand(Command command, int zone) throws CommandTypeNotSupportedException {
+    public AvrResponse sendMuteCommand(Command command, int zone) throws CommandTypeNotSupportedException, IOException {
         AvrCommand commandToSend = null;
 
         if (command == OnOffType.ON) {
@@ -320,6 +356,10 @@ public abstract class StreamAvrConnection implements AvrConnection {
         // This latch is used to block the stop method until the reader is really stopped.
         private CountDownLatch stopLatch;
 
+        private Object responseLock;
+        private AvrCommand sentCommand;
+        private AvrResponse receivedResponse;
+
         /**
          * Construct a reader that read the given inputStream
          *
@@ -327,11 +367,16 @@ public abstract class StreamAvrConnection implements AvrConnection {
          * @throws IOException
          */
         public IpControlInputStreamReader(InputStream inputStream) {
+            this.responseLock = new Object();
             this.bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             this.stopLatch = new CountDownLatch(1);
 
             this.setDaemon(true);
             this.setName("IpControlInputStreamReader-" + getConnectionName());
+        }
+
+        public void setSentCommand(AvrCommand c) {
+            this.sentCommand = c;
         }
 
         @Override
@@ -346,13 +391,28 @@ public abstract class StreamAvrConnection implements AvrConnection {
                     }
 
                     if (receivedData != null) {
+                        AvrResponse message = RequestResponseFactory.getIpControlResponse(receivedData);
+
                         logger.debug("Data received from AVR @{}: {}", getConnectionName(), receivedData);
+
+                        synchronized (responseLock) {
+                            // It is a response if a command has been sent, the message type is the same as the
+                            // expected response type and the response is for the requested zone.
+
+                            if (this.sentCommand.isResponse(message)) {
+                                // If it is a response, save it and notify the request sender.
+                                this.sentCommand.setResponse(message);
+                                this.responseLock.notify();
+                            }
+                        }
+
                         AvrStatusUpdateEvent event = new AvrStatusUpdateEvent(StreamAvrConnection.this, receivedData);
                         synchronized (updateListeners) {
                             for (AvrUpdateListener pioneerAvrEventListener : updateListeners) {
                                 pioneerAvrEventListener.statusUpdateReceived(event);
                             }
                         }
+
                     }
                 }
             } catch (IOException e) {

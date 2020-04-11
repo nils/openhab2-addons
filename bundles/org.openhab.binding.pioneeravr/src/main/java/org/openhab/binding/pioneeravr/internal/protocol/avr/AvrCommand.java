@@ -39,6 +39,8 @@ public interface AvrCommand {
          * @return
          */
         public String name();
+
+        public Object getExpectedResponse();
     }
 
     /**
@@ -61,5 +63,13 @@ public interface AvrCommand {
      * @return
      */
     public CommandType getCommandType();
+
+    public boolean isResponse(AvrResponse message);
+
+    public void setResponse(AvrResponse message);
+
+    public AvrResponse getResponse();
+
+    public boolean isResponseExpected();
 
 }

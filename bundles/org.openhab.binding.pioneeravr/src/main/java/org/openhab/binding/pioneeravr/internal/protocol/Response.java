@@ -37,13 +37,19 @@ public class Response implements AvrResponse {
         INPUT_SOURCE_CHANNEL("[0-9]{2}", "FN", "Z2F", "Z3F", "ZEA"),
         LISTENING_MODE("[0-9]{4}", "SR"),
         PLAYING_LISTENING_MODE("[0-9a-f]{4}", "LM"),
-        DISPLAY_INFORMATION("[0-9a-fA-F]{30}", "FL");
+        DISPLAY_INFORMATION("[0-9a-fA-F]{30}", "FL"),
+        NONE(""),
+        UNKNOWN_COMMAND(true, "", "E4"),
+        UNKNOWN_PARAMETER(true, "", "E6"),
+        GENERIC_ERROR(true, "", "R");
 
         private String[] responsePrefixZone;
 
         private String parameterPattern;
 
         private Pattern[] matchPatternZone;
+
+        private boolean isError = false;
 
         private ResponseType(String parameterPattern, String... responsePrefixZone) {
             this.responsePrefixZone = responsePrefixZone;
@@ -56,6 +62,11 @@ public class Response implements AvrResponse {
                 matchPatternZone[zoneIndex] = Pattern.compile(responsePrefix + "("
                         + (StringUtils.isNotEmpty(parameterPattern) ? parameterPattern : "") + ")");
             }
+        }
+
+        private ResponseType(boolean isError, String parameterPattern, String... responsePrefixZone) {
+            this(parameterPattern, responsePrefixZone);
+            this.isError = isError;
         }
 
         @Override
@@ -106,6 +117,10 @@ public class Response implements AvrResponse {
             }
             return result;
         }
+
+        public boolean isError() {
+            return this.isError;
+        }
     }
 
     private ResponseType responseType;
@@ -113,6 +128,11 @@ public class Response implements AvrResponse {
     private Integer zone;
 
     private String parameter;
+
+    private Response(ResponseType responseType, int zone) {
+        this.zone = zone;
+        this.responseType = responseType;
+    }
 
     public Response(String responseData) throws AvrConnectionException {
         if (StringUtils.isEmpty(responseData)) {
@@ -164,6 +184,10 @@ public class Response implements AvrResponse {
     @Override
     public Integer getZone() {
         return this.zone;
+    }
+
+    public static Response getReponseNone(int zone) {
+        return new Response(ResponseType.NONE, zone);
     }
 
 }
