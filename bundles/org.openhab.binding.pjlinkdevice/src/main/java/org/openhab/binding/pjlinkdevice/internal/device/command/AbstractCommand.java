@@ -34,6 +34,7 @@ public abstract class AbstractCommand<RequestType extends Request, ResponseType 
         this.pjLinkDevice = pjLinkDevice;
     }
 
+    @Override
     public PJLinkDevice getDevice() {
         return this.pjLinkDevice;
     }

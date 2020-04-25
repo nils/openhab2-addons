@@ -136,7 +136,7 @@ public class PJLinkDeviceHandler extends BaseThingHandler {
         if (device == null) {
             PJLinkDeviceConfiguration config = getConfiguration();
             this.device = device = new PJLinkDevice(config.tcpPort, InetAddress.getByName(config.ipAddress),
-                    config.adminPassword);
+                    config.adminPassword, config.ignoringAcknowledgementResponses);
         }
         return device;
     }

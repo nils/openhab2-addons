@@ -17,9 +17,11 @@ import java.io.IOException;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.cache.ExpiringCache;
+import org.openhab.binding.pjlinkdevice.internal.device.PJLinkDevice;
 
 /**
- * CachedCommand wraps any command and caches its response for a configurable period of time.
+ * CachedCommand wraps any command and caches its response for a configurable
+ * period of time.
  *
  * @author Nils Schnabel - Initial contribution
  */
@@ -39,7 +41,8 @@ public class CachedCommand<ResponseType extends Response<?>> implements Command<
             try {
                 return this.cachedCommand.execute();
             } catch (ResponseException | IOException | AuthenticationException e) {
-                // wrap exception into RuntimeException to unwrap again later in CachedCommand.execute()
+                // wrap exception into RuntimeException to unwrap again later in
+                // CachedCommand.execute()
                 throw new CacheException(e);
             }
         });
@@ -70,6 +73,11 @@ public class CachedCommand<ResponseType extends Response<?>> implements Command<
             }
             throw e;
         }
+    }
+
+    @Override
+    public PJLinkDevice getDevice() {
+        return this.cachedCommand.getDevice();
     }
 
 }

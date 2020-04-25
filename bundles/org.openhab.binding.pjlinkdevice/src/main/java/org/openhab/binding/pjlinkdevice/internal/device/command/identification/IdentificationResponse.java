@@ -24,7 +24,7 @@ import org.openhab.binding.pjlinkdevice.internal.device.command.ResponseExceptio
 @NonNullByDefault
 public class IdentificationResponse extends PrefixedResponse<String> {
     public IdentificationResponse(IdentificationCommand command, String response) throws ResponseException {
-        super(command.getIdentificationProperty().getPJLinkCommandPrefix() + "=", response);
+        super(command, command.getIdentificationProperty().getPJLinkCommandPrefix() + "=", response);
     }
 
     @Override

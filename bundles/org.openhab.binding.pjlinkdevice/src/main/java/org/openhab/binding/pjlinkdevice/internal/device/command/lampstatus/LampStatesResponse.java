@@ -51,8 +51,8 @@ public class LampStatesResponse extends PrefixedResponse<List<LampStatesResponse
         }
     }
 
-    public LampStatesResponse(String response) throws ResponseException {
-        super("LAMP=", response);
+    public LampStatesResponse(LampStatesCommand command, String response) throws ResponseException {
+        super(command, "LAMP=", response);
     }
 
     @Override

@@ -18,6 +18,11 @@
 		</channels>
 
 		<config-description>
+			<parameter-group name="workarounds">
+				<label>Workarounds for Specific Devices</label>
+				<description>Use these if your model has certain non-compliant behaviours</description>
+				<advanced>true</advanced>
+			</parameter-group>
 			<parameter name="ipAddress" type="text" required="true" min="1">
 				<context>network-address</context>
 				<label>IP Address</label>
@@ -66,6 +71,12 @@
 				<default>false</default>
 				<label>Poll for Lamp State</label>
 				<description>Enable polling for the lamp state. Only considered if the refresh interval is greater than zero.</description>
+			</parameter>
+			<parameter name="ignoringAcknowledgementResponses" type="boolean" groupName="workarounds">
+				<default>false</default>
+				<label>Ignore Acknowledgement Response</label>
+				<description>Try enabling this if your thing goes offline with an error message like 'Cannot understand
+					acknowledgement status:'.</description>
 			</parameter>
 		</config-description>
 

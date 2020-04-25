@@ -37,6 +37,6 @@ public class PowerQueryCommand extends AbstractCommand<PowerQueryRequest, PowerQ
 
     @Override
     public PowerQueryResponse parseResponse(String response) throws ResponseException {
-        return new PowerQueryResponse(response);
+        return new PowerQueryResponse(this, response);
     }
 }

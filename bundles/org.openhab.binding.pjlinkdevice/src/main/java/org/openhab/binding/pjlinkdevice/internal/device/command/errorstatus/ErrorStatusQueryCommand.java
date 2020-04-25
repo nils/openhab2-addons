@@ -37,6 +37,6 @@ public class ErrorStatusQueryCommand extends AbstractCommand<ErrorStatusQueryReq
 
     @Override
     public ErrorStatusQueryResponse parseResponse(String response) throws ResponseException {
-        return new ErrorStatusQueryResponse(response);
+        return new ErrorStatusQueryResponse(this, response);
     }
 }

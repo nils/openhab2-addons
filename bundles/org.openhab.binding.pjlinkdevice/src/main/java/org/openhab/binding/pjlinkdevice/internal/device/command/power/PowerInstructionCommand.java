@@ -59,6 +59,6 @@ public class PowerInstructionCommand extends AbstractCommand<PowerInstructionReq
 
     @Override
     public PowerInstructionResponse parseResponse(String response) throws ResponseException {
-        return new PowerInstructionResponse(response);
+        return new PowerInstructionResponse(this, response);
     }
 }

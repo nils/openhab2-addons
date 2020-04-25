@@ -37,6 +37,6 @@ public class MuteQueryCommand extends AbstractCommand<MuteQueryRequest, MuteQuer
 
     @Override
     public MuteQueryResponse parseResponse(String response) throws ResponseException {
-        return new MuteQueryResponse(response);
+        return new MuteQueryResponse(this, response);
     }
 }

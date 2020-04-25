@@ -69,27 +69,35 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class PJLinkDevice {
     private static final int TIMEOUT = 30000;
+
     protected int tcpPort;
     protected InetAddress ipAddress;
     protected @Nullable String adminPassword;
     protected boolean authenticationRequired;
+    protected boolean ignoringAcknowledgementResponses;
+    protected int timeout = TIMEOUT;
+
     protected @Nullable BufferedReader reader;
     protected @Nullable Socket socket;
-    protected int timeout = TIMEOUT;
+
     private final Logger logger = LoggerFactory.getLogger(PJLinkDevice.class);
-    private String prefixForNextCommand = "";
+
     private @Nullable Instant socketCreatedOn;
+    private String prefixForNextCommand = "";
     private CachedCommand<LampStatesResponse> cachedLampHoursCommand = new CachedCommand<>(new LampStatesCommand(this));
 
-    public PJLinkDevice(int tcpPort, InetAddress ipAddress, @Nullable String adminPassword, int timeout) {
+    public PJLinkDevice(int tcpPort, InetAddress ipAddress, @Nullable String adminPassword,
+            boolean ignoringAcknowledgementResponses, int timeout) {
         this.tcpPort = tcpPort;
         this.ipAddress = ipAddress;
         this.adminPassword = adminPassword;
+        this.ignoringAcknowledgementResponses = ignoringAcknowledgementResponses;
         this.timeout = timeout;
     }
 
-    public PJLinkDevice(int tcpPort, InetAddress ipAddress, @Nullable String adminPassword) {
-        this(tcpPort, ipAddress, adminPassword, TIMEOUT);
+    public PJLinkDevice(int tcpPort, InetAddress ipAddress, @Nullable String adminPassword,
+            boolean ignoringAcknowledgementResponses) {
+        this(tcpPort, ipAddress, adminPassword, ignoringAcknowledgementResponses, TIMEOUT);
     }
 
     @Override
@@ -366,5 +374,9 @@ public class PJLinkDevice {
         if (socket != null) {
             closeSocket(socket);
         }
+    }
+
+    public boolean isIgnoringAcknowledgementResponses() {
+        return ignoringAcknowledgementResponses;
     }
 }

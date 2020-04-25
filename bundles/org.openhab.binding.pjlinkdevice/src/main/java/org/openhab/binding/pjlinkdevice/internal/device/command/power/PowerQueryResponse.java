@@ -53,8 +53,8 @@ public class PowerQueryResponse extends PrefixedResponse<PowerQueryResponse.Powe
 
     }
 
-    public PowerQueryResponse(String response) throws ResponseException {
-        super("POWR=", response);
+    public PowerQueryResponse(PowerQueryCommand command, String response) throws ResponseException {
+        super(command, "POWR=", response);
     }
 
     @Override

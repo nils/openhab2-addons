@@ -82,6 +82,6 @@ public class MuteInstructionCommand extends AbstractCommand<MuteInstructionReque
 
     @Override
     public MuteInstructionResponse parseResponse(String response) throws ResponseException {
-        return new MuteInstructionResponse(response);
+        return new MuteInstructionResponse(this, response);
     }
 }

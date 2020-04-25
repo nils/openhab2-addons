@@ -31,8 +31,8 @@ public class InputListQueryResponse extends PrefixedResponse<Set<Input>> {
     private static final HashSet<ErrorCode> SPECIFIED_ERRORCODES = new HashSet<>(
             Arrays.asList(ErrorCode.UNAVAILABLE_TIME, ErrorCode.DEVICE_FAILURE));
 
-    public InputListQueryResponse(String response) throws ResponseException {
-        super("INST=", SPECIFIED_ERRORCODES, response);
+    public InputListQueryResponse(InputListQueryCommand command, String response) throws ResponseException {
+        super(command, "INST=", SPECIFIED_ERRORCODES, response);
     }
 
     @Override

@@ -34,4 +34,5 @@ public class PJLinkDeviceConfiguration {
     public boolean refreshLampState;
 
     public int autoReconnectInterval;
+    public boolean ignoringAcknowledgementResponses;
 }

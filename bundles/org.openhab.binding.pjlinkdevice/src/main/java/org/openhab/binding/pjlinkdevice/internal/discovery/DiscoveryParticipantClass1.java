@@ -71,7 +71,7 @@ public class DiscoveryParticipantClass1 extends AbstractDiscoveryParticipant {
 
     @Override
     protected void checkAddress(InetAddress ip, int tcpPort, int timeout) {
-        PJLinkDevice device = new PJLinkDevice(tcpPort, ip, null, timeout);
+        PJLinkDevice device = new PJLinkDevice(tcpPort, ip, null, false, timeout);
         try {
             Map<String, Object> properties = new HashMap<>();
             properties.put(PJLinkDeviceBindingConstants.PARAMETER_HOSTNAME, ip.getHostAddress());

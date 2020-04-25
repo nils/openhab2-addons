@@ -38,6 +38,6 @@ public class InputListQueryCommand extends AbstractCommand<InputListQueryRequest
 
     @Override
     public InputListQueryResponse parseResponse(String response) throws ResponseException {
-        return new InputListQueryResponse(response);
+        return new InputListQueryResponse(this, response);
     }
 }

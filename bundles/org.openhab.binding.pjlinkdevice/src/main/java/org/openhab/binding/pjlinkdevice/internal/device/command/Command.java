@@ -15,6 +15,7 @@ package org.openhab.binding.pjlinkdevice.internal.device.command;
 import java.io.IOException;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.openhab.binding.pjlinkdevice.internal.device.PJLinkDevice;
 
 /**
  * Basic command interface allowing to execute the command.
@@ -24,4 +25,6 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 @NonNullByDefault
 public interface Command<ResponseType extends Response<?>> {
     public ResponseType execute() throws ResponseException, IOException, AuthenticationException;
+
+    public PJLinkDevice getDevice();
 }

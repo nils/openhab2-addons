@@ -16,9 +16,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.pjlinkdevice.internal.device.command.AcknowledgeResponseValue;
+import org.openhab.binding.pjlinkdevice.internal.device.command.AcknowledgeResponse;
 import org.openhab.binding.pjlinkdevice.internal.device.command.ErrorCode;
-import org.openhab.binding.pjlinkdevice.internal.device.command.PrefixedResponse;
 import org.openhab.binding.pjlinkdevice.internal.device.command.ResponseException;
 
 /**
@@ -27,17 +26,11 @@ import org.openhab.binding.pjlinkdevice.internal.device.command.ResponseExceptio
  * @author Nils Schnabel - Initial contribution
  */
 @NonNullByDefault
-public class MuteInstructionResponse extends PrefixedResponse<AcknowledgeResponseValue> {
+public class MuteInstructionResponse extends AcknowledgeResponse {
     private static final HashSet<ErrorCode> SPECIFIED_ERRORCODES = new HashSet<>(
             Arrays.asList(ErrorCode.OUT_OF_PARAMETER, ErrorCode.UNAVAILABLE_TIME, ErrorCode.DEVICE_FAILURE));
 
-    public MuteInstructionResponse(String response) throws ResponseException {
-        super("AVMT=", SPECIFIED_ERRORCODES, response);
-    }
-
-    @Override
-    protected AcknowledgeResponseValue parseResponseWithoutPrefix(String responseWithoutPrefix)
-            throws ResponseException {
-        return AcknowledgeResponseValue.getValueForCode(responseWithoutPrefix);
+    public MuteInstructionResponse(MuteInstructionCommand command, String response) throws ResponseException {
+        super(command, "AVMT=", SPECIFIED_ERRORCODES, response);
     }
 }

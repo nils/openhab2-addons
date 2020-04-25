@@ -45,6 +45,6 @@ public class InputInstructionCommand extends AbstractCommand<InputInstructionReq
 
     @Override
     public InputInstructionResponse parseResponse(String response) throws ResponseException {
-        return new InputInstructionResponse(response);
+        return new InputInstructionResponse(this, response);
     }
 }

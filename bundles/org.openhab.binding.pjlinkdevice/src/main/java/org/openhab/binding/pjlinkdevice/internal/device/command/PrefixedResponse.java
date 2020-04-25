@@ -24,8 +24,8 @@ import org.eclipse.jdt.annotation.Nullable;
  *
  * A prefix has to be passed in the constructor for which is checked.
  *
- * Subclasses have to implement parseResponseWithoutPrefix, which allows parsing without having to remove the prefix
- * first.
+ * Subclasses have to implement parseResponseWithoutPrefix, which allows parsing
+ * without having to remove the prefix first.
  *
  * @author Nils Schnabel - Initial contribution
  */
@@ -34,16 +34,23 @@ public abstract class PrefixedResponse<ResponseType> implements Response<Respons
     private String prefix;
     private @Nullable Set<ErrorCode> specifiedErrors;
     private ResponseType result;
+    private Command<? extends PrefixedResponse<ResponseType>> command;
 
-    public PrefixedResponse(String prefix, String response) throws ResponseException {
-        this(prefix, null, response);
+    public PrefixedResponse(Command<? extends PrefixedResponse<ResponseType>> command, String prefix, String response)
+            throws ResponseException {
+        this(command, prefix, null, response);
     }
 
-    public PrefixedResponse(String prefix, @Nullable Set<ErrorCode> specifiedErrors, String response)
-            throws ResponseException {
+    public PrefixedResponse(Command<? extends PrefixedResponse<ResponseType>> command, String prefix,
+            @Nullable Set<ErrorCode> specifiedErrors, String response) throws ResponseException {
+        this.command = command;
         this.prefix = prefix;
         this.specifiedErrors = specifiedErrors;
         this.result = parse(response);
+    }
+
+    public Command<? extends PrefixedResponse<ResponseType>> getCommand() {
+        return command;
     }
 
     public ResponseType getResult() {

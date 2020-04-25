@@ -23,8 +23,8 @@ import org.openhab.binding.pjlinkdevice.internal.device.command.ResponseExceptio
  */
 @NonNullByDefault
 public class InputQueryResponse extends PrefixedResponse<Input> {
-    public InputQueryResponse(String response) throws ResponseException {
-        super("INPT=", response);
+    public InputQueryResponse(InputQueryCommand command, String response) throws ResponseException {
+        super(command, "INPT=", response);
     }
 
     @Override
